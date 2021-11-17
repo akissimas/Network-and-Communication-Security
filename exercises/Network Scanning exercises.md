@@ -1,4 +1,4 @@
-# [Network Scanning - exercises](https://git.swarmlab.io:3000/docs/Documentation)
+# Network Scanning
 
 1. Connect to master
     - master ip address: **172.20.0.2**
