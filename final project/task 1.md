@@ -1,7 +1,7 @@
 # Task 1
 
 ## Local terminal
-1. Εxecute the command (`ifconfig`) to find the IP we want to attack.
+1. Εxecute the command (`ifconfig`) to find the IP you want to attack.
 
 ```bash
 ...
