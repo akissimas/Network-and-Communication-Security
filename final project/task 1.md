@@ -95,7 +95,7 @@ Where:
 
 ## Dummy_service
 
-1. Εxecute (`docker exec -it -uroot dummy_service /bin/bash`) to connect to dummy_service.
+1. Εxecute (`docker exec -it -uroot --privileged dummy_service /bin/bash`) to connect to dummy_service.
 
 2. Install **tcpdump**.
 
