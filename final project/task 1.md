@@ -101,7 +101,6 @@ Where:
 
 ```bash
 apk update
-apk install tcpdump
 apk add tcpdump
 ```
 
