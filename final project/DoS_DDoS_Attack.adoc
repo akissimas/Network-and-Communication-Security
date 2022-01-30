@@ -1,6 +1,6 @@
 
 = Ασφάλεια Δικτύων και Επικοινωνιών
-:toc: macro
+:toc:
 :toc-title:
 :source-highlighter: rouge
 :source-language: bash
