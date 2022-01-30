@@ -1,0 +1,522 @@
+
+= Ασφάλεια Δικτύων και Επικοινωνιών
+:toc: macro
+:toc-title:
+:source-highlighter: rouge
+:source-language: bash
+
+
+== Εισαγωγή
+
+Το ζητούμενο της εργασίας είναι η υλοποίηση συστήματος για την προσομοίωση *DoS/DDoS Attack*.
+Για την προσομοίωση της επίθεσης χρησιμοποιήθηκε το swarmLab το οποίο εγκαταστάθηκε σε Ubuntu 20.04.3 LTS.
+
+TIP: Πληροφορίες σχετικά με το swarmLab μπορείτε να βρείτε http://docs.swarmlab.io/SwarmLab-HowTos/swarmlab/docs/swarmlab/docs/index.html[εδώ, window=_new].
+
+
+== Εργαλεία που χρησιμοποιήθηκαν
+
+=== Ifconfig
+
+Με την εντολή *ifconfig* μπορούμε να βρούμε την ip του συστήματός μας.
+
+[source]
+----
+# ifconfig
+
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 172.20.0.3  netmask 255.255.0.0  broadcast 172.20.255.255
+        ether 02:42:ac:14:00:03  txqueuelen 0  (Ethernet)
+        RX packets 1022619  bytes 54347563 (54.3 MB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 953260  bytes 70415392 (70.4 MB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 465215  bytes 23399017 (23.3 MB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 465215  bytes 23399017 (23.3 MB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+----
+
+
+=== Namp
+
+Το *Nmap (Network Mapper)* είναι ένα open-source εργαλείο 
+που χρησιμοποιείται για σάρωση ευπαθειών και ανακάλυψη δικτύων. 
+
+==== Σάρωση live hosts
+[source]
+----
+# nmap -sP 172.20.0.*
+
+Starting Nmap 7.60 ( https://nmap.org ) at 2022-01-24 17:33 UTC
+Nmap scan report for akis-virtual-machine (172.20.0.1)
+Host is up (0.00028s latency).
+Nmap scan report for hybrid-linux_master_1.hybrid-linux_hybrid-linux (172.20.0.2)
+Host is up (0.00020s latency).
+Nmap scan report for 5aec7106b648 (172.20.0.3)
+Host is up (0.00016s latency).
+Nmap scan report for hybrid-linux_worker_2.hybrid-linux_hybrid-linux (172.20.0.4)
+Host is up (0.00015s latency).
+Nmap scan report for hybrid-linux_worker_3.hybrid-linux_hybrid-linux (172.20.0.5)
+Host is up (0.00012s latency).
+Nmap done: 256 IP addresses (5 hosts up) scanned in 3.83 seconds
+----
+
+Όπου,
+
+[horizontal]
+-sP:: Παράμετρος όπου λέει στο Nmap να μην κάνει port scan αφού ανακαλύψει κάποιον host.
+
+NOTE: Η παράμετρος -sP εμφανίζεται και ως -sn.
+
+==== Σάρωση ενός ή περισσοτέρων ports
+
+.Σάρωση ενός port
+
+[source]
+----
+# Scanning port 80
+
+nmap –p 80 172.20.0.3
+----
+
+.Σάρωση μιας σειράς απο ports
+
+[source]
+----
+# Scanning ports 1-200
+
+nmap –p 1-200 172.20.0.3
+----
+
+.Σάρωση όλων των ports
+
+[source]
+----
+# Scanning all ports
+
+nmap –p- 172.20.0.3
+----
+
+.Σάρωση όλων των UDP και TCP ports
+
+[source]
+----
+# Scanning all UDP nad TCP ports
+
+nmap -sU - sT –p- 172.20.0.3
+----
+
+Όπου,
+
+[horizontal]
+-sU:: Παράμετρος για UDP scan
+-sT:: Παράμετρος για TCP scan
+
+
+=== Hping3
+
+Το hping3 είναι ένα εργαλείο δικτύου που μπορεί να στέλνει προσαρμοσμένα πακέτα 
+TCP/IP και να εμφανίζει τις απαντήσεις του στόχου. Κάποιες από τις λειτουργίες
+που μπορούν να υλοποιηθούν είναι test firewall rules, advanced port scanning, 
+test net performance χρησιμοποιώντας διάφορα πρωτόκολλα κλπ.
+
+TIP: Περισσότερες πληροφορίες σχετικά με το hping3 μπορείτε να βρείτε στο επίσημο site http://www.hping.org[window=_new].
+
+==== Εγκατάσταση του hping3
+
+[source]
+----
+sudo apt install hping3
+----
+
+==== Παράδειγμα χρήσης hping3
+
+[source]
+----
+# sudo hping3 --traceroute -V -1 172.24.0.4
+
+using eth0, addr: 172.24.0.3, MTU: 1500
+HPING 172.24.0.4 (eth0 172.24.0.4): icmp mode set, 28 headers + 0 data bytes
+len=28 ip=172.24.0.4 ttl=64 id=14922 tos=0 iplen=28
+icmp_seq=0 rtt=7.5 ms
+len=28 ip=172.24.0.4 ttl=64 id=14930 tos=0 iplen=28
+icmp_seq=1 rtt=2.8 ms
+len=28 ip=172.24.0.4 ttl=64 id=15127 tos=0 iplen=28
+icmp_seq=2 rtt=1.7 ms
+len=28 ip=172.24.0.4 ttl=64 id=15368 tos=0 iplen=28
+icmp_seq=3 rtt=1.8 ms
+len=28 ip=172.24.0.4 ttl=64 id=15403 tos=0 iplen=28
+icmp_seq=4 rtt=8.8 ms
+^C
+--- 172.24.0.4 hping statistic ---
+5 packets transmitted, 5 packets received, 0% packet loss
+round-trip min/avg/max = 1.7/4.5/8.8 ms
+----
+
+Όπου,
+
+[horizontal]
+
+--traceroute:: Traceroute mode
+-V:: Enable verbose output
+-1:: ICMP mode, απο προεπιλογή το hping3 στέλνει ICMP echo-request
+
+
+=== Tcpdump
+
+Το tcpdump είναι ένας packet analyzer που εκτελείται από την γραμμή εντολών.
+Επιτρέπει στο χρήστη να εμφανίζει πακέτα TCP/IP και άλλα πακέτα που μεταδίδονται 
+ή λαμβάνονται σε ένα δίκτυο στο οποίο είναι συνδεδεμένος ο υπολογιστής.
+
+TIP: Περισσότερες πληροφορίες σχετικά με το tcpdump μπορείτε να βρείτε στο επίσημο site 
+https://www.tcpdump.org/[window=_new].
+
+==== Εγκατάσταση του tcpdump
+
+[source]
+----
+sudo apt install tcpdump
+----
+
+==== Παραδείγματα χρήσης tcpdump
+
+.Παρατήρηση πακέτων που έρχονται από το interface μας
+
+[source]
+----
+tcpdump -i eth0
+----
+
+.Eύρεση κίνησης μέσω IP
+
+[source]
+----
+tcpdump host 1.1.1.1
+----
+
+.Εύρεση κίνησης απο Source ή/και Destination
+
+[source]
+----
+tcpdump src 1.1.1.1
+tcpdump dst 1.0.0.1
+----
+
+.Εύρεση πακέτων βάσει δικτύου
+
+[source]
+----
+tcpdump net 1.2.3.0/24
+----
+
+.Εύρεση πακέτων μέσω συγκεκριμένης πόρτας
+
+[source]
+----
+tcpdump port 3389
+----
+
+.Eύρεση κίνησης πακέτων
+
+[source]
+----
+# we can use tcp, udp, icmp etc.
+
+tcpdump icmp
+----
+
+
+=== Iptables
+
+Το iptables χρησιμοποιείται για τη δημιουργία, τη συντήρηση και την επιθεώρηση των IP packet filter rules 
+στο Linux kernel που υλοποιείται στο πλαίσιο του Netfilter project. Κάθε πίνακας περιέχει έναν αριθμό απο built-in chains 
+και μπορεί επίσης να περιέχει user-defined chains. Το "iptables" χρησιμοποιείται για IPv4 και το "ip6tables" για IPV6. 
+Τόσο το "iptables" όσο και το "ip6tables" έχουν την ίδια σύνταξη, αλλά ορισμένες επιλογές είναι συγκεκριμένες είτε για IPv4 είτε για IPv6.
+
+
+TIP: Περισσότερες πληροφορίες σχετικά με το iptables μπορείτε να βρείτε https://linux.die.net/man/8/iptables[εδώ, window=_new].
+
+==== Παράδειγματα χρήσης iptables
+
+.Aποκλεισμός κυκλοφορίας που εισέρχεται σε ένα συγκεκριμένο interface με την χρήση port
+
+[source]
+----
+iptables -A INPUT -j DROP -p tcp --destination-port 110 -i eth0
+----
+
+Όπου,
+
+[horizontal]
+
+-A:: Θα προσθέσει ή επισυνάψει τον κανόνα στο τέλος της αλυσίδας.
+* *INPUT* θα προσθέσει τον κανόνα στον πίνακα.
+* *DROP* σημαίνει ότι τα πακέτα απορρίπτονται.
+
+-p tcp:: Σημαίνει ότι ο κανόνας θα απορρίπτει μόνο πακέτα TCP.
+
+--destination-port 110:: Φιλτράρει τα πακέτα που απευθύνονται στη πόρτα 110.
+
+-i eth0:: Σημαίνει ότι αυτός ο κανόνας θα επηρεάσει μόνο τα πακέτα που φτάνουν στη διασύνδεση eth0.
+
+
+== DoS/DDoS Attach
+
+Αρχικά, εκκινούμε την εφαρμογή swarmLab με την εντολή `sudo swarmlab-hybrid/start.sh` και απο τις
+υπηρεσίες που διαθέτει επιλέγουμε την καρτέλα *Labs@Home* και από εκεί το *LabRoom*. 
+Έπειτα, επιλέγουμε το Labroom *linux* και βάζουμε τον αριθμό των εικονικών υπολογιστών 
+που θέλουμε να δημιουργήσουμε (στην δικιά μας περίπτωση βάζουμε 4). 
+
+Αφού τα δημιουργήσουμε πηγαίνουμε στην καρτέλα *RunningInstances* και βλέπουμε τα καινούργια instances 
+που έχουν δημιουργηθεί. Εμείς θα ασχοληθούμε με τα *hybrid-linux_worker_1* και *hybrid-linux_worker_2*.
+Η σύνδεση γίνεται ανοίγοντας 2 terminal και γράφοντας στο καθένα:
+
+[source]
+----
+# terminal 1
+docker exec -it -udocker hybrid-linux_worker_1 /bin/bash
+----
+
+[source]
+----
+# terminal 2
+docker exec -it -udocker hybrid-linux_worker_2 /bin/bash
+----
+
+NOTE: Στο δικό μας παράδειγμα ο *worker 1* θα πραγματοποιήσει επίθεση προς τον *worker 2*.
+
+Αφού έχουμε συνδεθεί σαν worker 1, με την εντολή `ifconfig` βρίσκουμε την IP του συστήματος 
+έτσι ώστε με την εντολή `nmap` να βρούμε όλες τις διαθέσιμες συσκευές.
+
+[source]
+----
+# worker_1
+# ifconfig
+
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 172.20.0.3  netmask 255.255.0.0  broadcast 172.20.255.255
+        ether 02:42:ac:14:00:03  txqueuelen 0  (Ethernet)
+        RX packets 10340  bytes 439216 (439.2 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 20  bytes 840 (840.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+----
+
+Αφού βρήκαμε την IP, με την εντολή `nmap -sT -p0- 172.20.0.*` θα ψάξουμε για όλες τις διαθέσιμες TCP πόρτες του δικτύου.
+
+[source]
+----
+# worker_1
+# nmap -sT -p0- 172.20.0.*
+
+Starting Nmap 7.60 ( https://nmap.org ) at 2022-01-30 14:27 UTC
+Nmap scan report for akis-virtual-machine (172.20.0.1)
+Host is up (0.00021s latency).
+Not shown: 65529 closed ports
+PORT      STATE SERVICE
+3080/tcp  open  stm_pproc
+3088/tcp  open  xdtp
+3382/tcp  open  fujitsu-neat
+3383/tcp  open  esp-lm
+3384/tcp  open  hp-clic
+5000/tcp  open  upnp
+44869/tcp open  unknown
+
+Nmap scan report for hybrid-linux_master_1.hybrid-linux_hybrid-linux (172.20.0.2)
+Host is up (0.00042s latency).
+Not shown: 65535 closed ports
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for 47ac82f9ce16 (172.20.0.3)
+Host is up (0.00040s latency).
+Not shown: 65535 closed ports
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for hybrid-linux_worker_3.hybrid-linux_hybrid-linux (172.20.0.4)
+Host is up (0.00019s latency).
+Not shown: 65535 closed ports
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap scan report for hybrid-linux_worker_2.hybrid-linux_hybrid-linux (172.20.0.5)
+Host is up (0.00016s latency).
+Not shown: 65535 closed ports
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap done: 256 IP addresses (5 hosts up) scanned in 12.53 seconds
+----
+
+Όπου,
+
+[horizontal]
+
+-sT:: Σάρωση των TCP ports μόνο.
+-p0-:: Σάρωση για όλες τις πόρτες.
+
+
+Επιπλέον, με την εντολή `nmap -sT -p0- 172.20.0.* | grep 'Nmap' | cut -d' ' -f5-6` 
+μπορούμε να φιλτράρουμε τα αποτελέσματα που παίρνουμε έτσι ώστε να κρατήσουμε 
+μόνο τις IP του δικτύου που θα βρούμε.
+
+[source]
+----
+# worker_1
+# nmap -sT -p0- 172.20.0.* | grep 'Nmap' | cut -d' ' -f5-6
+
+akis-virtual-machine (172.20.0.1)
+hybrid-linux_master_1.hybrid-linux_hybrid-linux (172.20.0.2)
+47ac82f9ce16 (172.20.0.3)
+hybrid-linux_worker_3.hybrid-linux_hybrid-linux (172.20.0.4)
+hybrid-linux_worker_2.hybrid-linux_hybrid-linux (172.20.0.5)
+----
+
+NOTE: Εμάς μας ενδιαφέρει ο worker 2 με IP *172.20.0.5* και open port 22.
+
+Το επόμενο βήμα, αφού έχουμε βρει την IP που μας ενδιαφέρει και την πόρτα που θα χτυπήσουμε, χρησιμοποιούμαι την εντολή `hping3` για να πραγματοποιήσουμε την επίθεση.
+
+[source]
+----
+# worker_1
+# sudo hping3 -S 172.20.0.5 -p 22
+
+HPING 172.20.0.5 (eth0 172.20.0.5): S set, 40 headers + 0 data bytes
+len=44 ip=172.20.0.5 ttl=64 DF id=0 sport=22 flags=SA seq=0 win=64240 rtt=7.6 ms
+len=44 ip=172.20.0.5 ttl=64 DF id=0 sport=22 flags=SA seq=1 win=64240 rtt=0.9 ms
+len=44 ip=172.20.0.5 ttl=64 DF id=0 sport=22 flags=SA seq=2 win=64240 rtt=8.0 ms
+len=44 ip=172.20.0.5 ttl=64 DF id=0 sport=22 flags=SA seq=3 win=64240 rtt=4.2 ms
+^C
+--- 172.20.0.5 hping statistic ---
+4 packets transmitted, 4 packets received, 0% packet loss
+round-trip min/avg/max = 0.9/5.2/8.0 ms
+----
+
+Όπου,
+
+[horizontal]
+
+-S:: Ορισμός SYN tcp flag.
+-p 22:: Η ανοιχτή πόρτα που θα χρησιμοποιήσουμε.
+
+TIP: Μπορούμε να χρησιμοποιήσουμε και την παράμετρο `--flood` έτσι ώστε να στέλνουμε πολλαπλά πακέτα 
+χωρίς να μας νοιάζει η εμφάνιση των εισερχόμενων απαντήσεων.
+
+
+Από την πλευρά του θύματος μπορούμε να εντοπίσουμε την κίνηση των πακέτων μέσω του `tcpdump`.
+Έτσι, θα μπορέσουμε να βρούμε αντίμετρα για να προστατευτούμε από την επίθεση.
+
+[source]
+----
+# worker_2
+# sudo tcpdump port 22 -n
+
+listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
+15:13:37.324050 IP 172.20.0.3.2225 > 172.20.0.5.22: Flags [S], seq 56345051, win 512, length 0
+15:13:37.324232 IP 172.20.0.5.22 > 172.20.0.3.2225: Flags [S.], seq 1577755840, ack 56345052, win 64240, options [mss 1460], length 0
+15:13:37.324536 IP 172.20.0.3.2225 > 172.20.0.5.22: Flags [R], seq 56345052, win 0, length 0
+15:13:38.325764 IP 172.20.0.3.2226 > 172.20.0.5.22: Flags [S], seq 512700683, win 512, length 0
+15:13:38.325889 IP 172.20.0.5.22 > 172.20.0.3.2226: Flags [S.], seq 33687008, ack 512700684, win 64240, options [mss 1460], length 0
+15:13:38.325943 IP 172.20.0.3.2226 > 172.20.0.5.22: Flags [R], seq 512700684, win 0, length 0
+15:13:39.326823 IP 172.20.0.3.2227 > 172.20.0.5.22: Flags [S], seq 1608436885, win 512, length 0
+15:13:39.326951 IP 172.20.0.5.22 > 172.20.0.3.2227: Flags [S.], seq 2068385145, ack 1608436886, win 64240, options [mss 1460], length 0
+15:13:39.327007 IP 172.20.0.3.2227 > 172.20.0.5.22: Flags [R], seq 1608436886, win 0, length 0
+15:13:40.327156 IP 172.20.0.3.2228 > 172.20.0.5.22: Flags [S], seq 1743976130, win 512, length 0
+15:13:40.327181 IP 172.20.0.5.22 > 172.20.0.3.2228: Flags [S.], seq 1422016784, ack 1743976131, win 64240, options [mss 1460], length 0
+15:13:40.327196 IP 172.20.0.3.2228 > 172.20.0.5.22: Flags [R], seq 1743976131, win 0, length 0
+^C
+12 packets captured
+12 packets received by filter
+0 packets dropped by kernel
+----
+
+Όπου,
+
+[horizontal]
+
+port 22:: Παρακολούθηση κίνησης στην πόρτα 22.
+-n:: Δεν μετατρέπουμε τις διευθύνσεις σε ονόματα.
+
+
+Για να αποκλεισουμε απο την επικοινωνια τον *worker 1* μπορούμε να χρησιμοποιήσουμε την εντολή `iptables`.
+
+[source]
+----
+# worker_2
+# sudo iptables -I INPUT -s 172.20.0.3 -j DROP
+# sudo iptables -nL
+
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination         
+DROP       all  --  172.20.0.3           0.0.0.0/0           
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination  
+----
+
+Όπου,
+
+* `sudo iptables -I INPUT -s 172.20.0.3 -j DROP`
+[horizontal]
+-I:: Εισαγωγή ενός ή περισσότερων κανόνων σε μια συγκεκριμένη θέση στην αλυσίδα.
+-s:: Εισαγωγή διεύθυνσης που μπορεί να είναι ένα όνομα δικτύου, ένα hostname, μια διεύθυνση IP δικτύου (με /mask) ή μια απλή διεύθυνση IP.
+-j:: Καθορίζει τον στόχο του κανόνα, στην περίπτωσή μας γίνεται *DROP*, δηλαδή τα πακέτα απορρίπτονται.
+
+* `sudo iptables -nL`
+[horizontal]
+-n:: Αριθμητική έξοδος. Οι διευθύνσεις IP και οι αριθμοί θυρών θα εκτυπωθούν σε αριθμητική μορφή.
+-L:: Λίστα όλων των κανόνων στην επιλεγμένη αλυσίδα.
+
+Με τον παραπάνω τρόπο έχουμε αποκλείσει την επικοινωνία με τον worker 1, έτσι δεν θα δεχόμαστε τα πακέτα από την συγκεκριμένη IP.
+
+TIP: Αν θέλουμε να αναιρέσουμε τον κανόνα που βάλαμε, χρησιμοποιούμε την παράμετρο *--delete* ή *-D*, δηλαδή `sudo iptables -D INPUT -s 172.18.0.1 -j DROP`.
+
+
+Παρακάτω βλέπουμε την επίθεση μετά απο την χρήση της εντολής `iptables`.
+
+[source]
+----
+# worker_1
+# sudo hping3 -S 172.20.0.5 -p 22
+
+HPING 172.20.0.5 (eth0 172.20.0.5): S set, 40 headers + 0 data bytes
+^C
+--- 172.20.0.5 hping statistic ---
+6 packets transmitted, 0 packets received, 100% packet loss
+round-trip min/avg/max = 0.0/0.0/0.0 ms
+----
+
+[source]
+----
+# worker_2 with iptables rules
+# sudo tcpdump port 22 -n
+
+listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
+16:33:26.111798 IP 172.20.0.3.2593 > 172.20.0.5.22: Flags [S], seq 536136665, win 512, length 0
+16:33:27.112609 IP 172.20.0.3.2594 > 172.20.0.5.22: Flags [S], seq 659553861, win 512, length 0
+16:33:28.113597 IP 172.20.0.3.2595 > 172.20.0.5.22: Flags [S], seq 270204475, win 512, length 0
+16:33:29.114465 IP 172.20.0.3.2596 > 172.20.0.5.22: Flags [S], seq 1433540968, win 512, length 0
+16:33:30.115154 IP 172.20.0.3.2597 > 172.20.0.5.22: Flags [S], seq 2089393337, win 512, length 0
+16:33:31.115706 IP 172.20.0.3.2598 > 172.20.0.5.22: Flags [S], seq 763539891, win 512, length 0
+^C
+6 packets captured
+6 packets received by filter
+0 packets dropped by kernel
+----
