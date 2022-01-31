@@ -42,7 +42,7 @@ lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
 ----
 
 
-=== Namp
+=== Nmap
 
 Το *Nmap (Network Mapper)* είναι ένα open-source εργαλείο 
 που χρησιμοποιείται για σάρωση ευπαθειών και ανακάλυψη δικτύων. 
