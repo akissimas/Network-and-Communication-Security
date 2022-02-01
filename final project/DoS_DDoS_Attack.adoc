@@ -265,7 +265,7 @@ iptables -A INPUT -j DROP -p tcp --destination-port 110 -i eth0
 -i eth0:: Σημαίνει ότι αυτός ο κανόνας θα επηρεάσει μόνο τα πακέτα που φτάνουν στη διασύνδεση eth0.
 
 
-== DoS/DDoS Attach
+== DoS/DDoS Attack
 
 Αρχικά, εκκινούμε την εφαρμογή swarmLab με την εντολή `sudo swarmlab-hybrid/start.sh` και απο τις
 υπηρεσίες που διαθέτει επιλέγουμε την καρτέλα *Labs@Home* και από εκεί το *LabRoom*. 
